@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var dpm: DevicePolicyManager
     private lateinit var adminComponent: ComponentName
     private lateinit var prefs: SharedPreferences
+    private var failedAttempts = 0
 
     // Views
     private lateinit var cardAdminWarning: MaterialCardView
@@ -320,14 +321,21 @@ class MainActivity : AppCompatActivity() {
         if (savedPin.isNullOrEmpty()) {
             // Pertama kali setup PIN, simpan
             prefs.edit().putString("pref_parent_pin", pinInput).apply()
+            failedAttempts = 0
             Toast.makeText(this, "PIN Orang Tua berhasil dibuat!", Toast.LENGTH_SHORT).show()
         } else {
             // Verifikasi PIN
             if (pinInput != savedPin) {
-                inputSetupPin.error = "PIN Salah! Gagal memulai sesi anak."
+                failedAttempts++
+                inputSetupPin.error = "PIN Salah! Gagal memulai sesi anak ($failedAttempts/3)."
+                if (failedAttempts >= 3) {
+                    showResetPinDialog()
+                }
                 return
             }
         }
+
+        failedAttempts = 0
 
         // 4. Jalankan TimerService Foreground
         val serviceIntent = Intent(this, TimerService::class.java).apply {
@@ -358,10 +366,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (pinInput != savedPin) {
-            inputVerifyPin.error = "PIN Salah! Gagal membatalkan timer."
+            failedAttempts++
+            inputVerifyPin.error = "PIN Salah! Gagal membatalkan timer ($failedAttempts/3)."
             Toast.makeText(this, "PIN Salah! Hubungi Orang Tua.", Toast.LENGTH_SHORT).show()
+            if (failedAttempts >= 3) {
+                showResetPinDialog()
+            }
             return
         }
+
+        failedAttempts = 0
 
         // Stop Timer Service
         val serviceIntent = Intent(this, TimerService::class.java)
@@ -376,6 +390,67 @@ class MainActivity : AppCompatActivity() {
         // Pindah ke Setup Mode
         showSetupMode()
         Toast.makeText(this, "Sesi Bermain Anak berhasil dihentikan.", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showResetPinDialog() {
+        val num1 = (6..9).random()
+        val num2 = (6..9).random()
+        val correctAnswer = num1 * num2
+
+        val builder = android.app.AlertDialog.Builder(this)
+        builder.setTitle("Verifikasi Orang Tua (Reset PIN)")
+        builder.setMessage("Sandi salah 3 kali. Selesaikan perkalian berikut untuk mereset PIN:\n\nBerapakah hasil dari $num1 x $num2?")
+
+        val input = EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            hint = "Jawaban Anda"
+            importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
+        }
+        
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(60, 20, 60, 20)
+            }
+            input.layoutParams = params
+            addView(input)
+        }
+        builder.setView(container)
+
+        builder.setPositiveButton("Reset PIN") { dialog, _ ->
+            val answerText = input.text.toString().trim()
+            val answer = answerText.toIntOrNull()
+            if (answer == correctAnswer) {
+                // Hapus PIN lama
+                prefs.edit().remove("pref_parent_pin").apply()
+                failedAttempts = 0
+                
+                // Hentikan sesi aktif jika sedang berjalan
+                val isTimerActive = prefs.getBoolean("pref_timer_active", false)
+                if (isTimerActive) {
+                    val serviceIntent = Intent(this, TimerService::class.java)
+                    stopService(serviceIntent)
+                    prefs.edit().putBoolean("pref_timer_active", false).apply()
+                    showSetupMode()
+                }
+                
+                checkPinState()
+                Toast.makeText(this, "PIN berhasil direset! Silakan buat PIN baru.", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "Jawaban salah! Gagal mereset PIN.", Toast.LENGTH_SHORT).show()
+            }
+            dialog.dismiss()
+        }
+
+        builder.setNegativeButton("Batal") { dialog, _ ->
+            dialog.dismiss()
+        }
+
+        builder.setCancelable(false)
+        builder.show()
     }
 
     private fun showSetupMode() {
