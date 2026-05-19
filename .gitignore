@@ -17,3 +17,6 @@ local.properties
 # Built APKs/Bundles
 *.apk
 *.aar
+
+# Plan
+plan/
