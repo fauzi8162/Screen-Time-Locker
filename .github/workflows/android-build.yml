@@ -20,7 +20,7 @@ jobs:
         cache: gradle
 
     - name: Generate Gradle Wrapper
-      run: gradle wrapper
+      run: gradle wrapper --gradle-version 9.5.1
 
     - name: Grant Execute Permission for Gradlew
       run: chmod +x gradlew

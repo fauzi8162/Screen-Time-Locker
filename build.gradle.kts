@@ -1,5 +1,5 @@
 plugins {
-    id("com.android.application") version "8.2.0" apply false
-    id("com.android.library") version "8.2.0" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.0" apply false
+    // Android Gradle Plugin versi 9.0.0 yang sepenuhnya kompatibel dengan Gradle 9.x
+    id("com.android.application") version "9.0.0" apply false
+    id("com.android.library") version "9.0.0" apply false
 }

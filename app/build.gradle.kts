@@ -1,6 +1,7 @@
 plugins {
+    // Dengan AGP 9.0.0+, dukungan Kotlin sudah terintegrasi secara bawaan (built-in).
+    // Kita tidak perlu lagi menerapkan plugin "org.jetbrains.kotlin.android" secara manual.
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
 }
 
 android {
@@ -21,12 +22,11 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+    
     compileOptions {
+        // AGP 9.0 secara otomatis menyelaraskan target Kotlin JVM dengan versi Java compileOptions di bawah ini
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
     }
 }
 
