@@ -53,6 +53,9 @@ class TimerService : Service() {
             apply()
         }
 
+        // Jadwalkan AlarmManager sebagai fallback tangguh saat aplikasi ditutup/dimatikan
+        scheduleAlarm(endTimeMillis)
+
         // Tampilkan notifikasi persistent foreground service segera
         val initialNotification = buildNotification(totalMs)
         startForeground(NOTIFICATION_ID, initialNotification)
@@ -90,7 +93,7 @@ class TimerService : Service() {
             }
         }.start()
 
-        return START_NOT_STICKY
+        return START_STICKY // Ubah ke START_STICKY agar OS menghidupkan kembali service jika tidak sengaja terbunuh
     }
 
     private fun lockScreen() {
@@ -145,7 +148,69 @@ class TimerService : Service() {
 
     override fun onDestroy() {
         countDownTimer?.cancel()
+        // Batalkan alarm jika service dihancurkan (misalnya saat dihentikan manual oleh PIN Orang Tua)
+        cancelAlarm()
         super.onDestroy()
+    }
+
+    private fun scheduleAlarm(endTimeMillis: Long) {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, AlarmReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        endTimeMillis,
+                        pendingIntent
+                    )
+                } else {
+                    alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        endTimeMillis,
+                        pendingIntent
+                    )
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    endTimeMillis,
+                    pendingIntent
+                )
+            } else {
+                alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    endTimeMillis,
+                    pendingIntent
+                )
+            }
+        } catch (e: SecurityException) {
+            // Fallback jika izin exact alarm dinonaktifkan
+            alarmManager.set(
+                AlarmManager.RTC_WAKEUP,
+                endTimeMillis,
+                pendingIntent
+            )
+        }
+    }
+
+    private fun cancelAlarm() {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, AlarmReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        alarmManager.cancel(pendingIntent)
     }
 
     override fun onBind(intent: Intent?): IBinder? {
