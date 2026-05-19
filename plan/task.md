@@ -1,0 +1,21 @@
+# Daftar Tugas Implementasi KidLockTimer
+
+- [x] Konfigurasi Struktur & Gradle Modul Root dan App
+  - [x] Buat `settings.gradle.kts`
+  - [x] Buat `build.gradle.kts` (root)
+  - [x] Buat `app/build.gradle.kts` (app)
+- [x] Konfigurasi Resource UI & Layout (Material 3)
+  - [x] Buat `app/src/main/res/values/colors.xml`
+  - [x] Buat `app/src/main/res/values/strings.xml`
+  - [x] Buat `app/src/main/res/values/themes.xml`
+  - [x] Buat `app/src/main/res/layout/activity_main.xml`
+  - [x] Buat `app/src/main/res/xml/device_admin_rules.xml`
+- [x] Implementasi Logika Kotlin Backend
+  - [x] Buat `app/src/main/java/com/example/locktimer/AdminReceiver.kt`
+  - [x] Buat `app/src/main/java/com/example/locktimer/BootReceiver.kt`
+  - [x] Buat `app/src/main/java/com/example/locktimer/TimerService.kt`
+  - [x] Buat `app/src/main/java/com/example/locktimer/MainActivity.kt`
+- [x] Konfigurasi Sistem CI/CD & Deploy
+  - [x] Buat `app/src/main/AndroidManifest.xml`
+  - [x] Buat `.github/workflows/android-build.yml`
+- [x] Panduan Pengguna untuk Deploy dan Pengoperasian

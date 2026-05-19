@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kid Lock Timer</string>
+    <string name="device_admin_description">Izin ini diperlukan agar aplikasi dapat mematikan dan mengunci layar HP secara otomatis ketika batas waktu bermain anak habis.</string>
+    <string name="notification_channel_name">Penghitung Waktu Sesi</string>
+    <string name="notification_channel_desc">Menampilkan sisa waktu sesi anak di bilah notifikasi agar tidak dihentikan oleh sistem.</string>
+    <string name="notification_title">Sesi Bermain Anak Aktif</string>
+    <string name="notification_text_format">Sisa waktu: %1$d menit %2$d detik</string>
+    <string name="notification_text_finished">Waktu bermain habis! Mengunci layar…</string>
+</resources>

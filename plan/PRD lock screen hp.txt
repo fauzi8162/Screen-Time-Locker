@@ -1,0 +1,246 @@
+Ini adalah keputusan arsitektur yang sangat efisien. Dengan koding di VS Code dan memanfaatkan **GitHub Actions** sebagai mesin *builder*-nya, Anda tidak perlu menginstal Android Studio yang terkenal sangat berat di laptop.
+
+Di ekosistem Android, proyek Kotlin murni (tanpa Android Studio) dikelola menggunakan sistem bernama **Gradle**.
+
+Berikut adalah **PRD (Product Requirement Document)** sekaligus blueprint struktur file yang bisa langsung Anda pakai untuk menyusun proyek di VS Code, lengkap dengan konfigurasi GitHub Actions-nya.
+
+---
+
+# 📝 Product Requirement Document (PRD) & Prompt Panduan
+
+## 1. Ringkasan Produk (Overview)
+
+Aplikasi Android berbasis Kotlin murni tanpa library pihak ketiga yang berfungsi sebagai *Offline Kid Timer Lock*. Aplikasi ini menerima input durasi menit dari orang tua, berjalan di latar belakang (*Foreground Service*), dan mengunci layar HP secara otomatis ketika waktu habis menggunakan API `DevicePolicyManager`.
+
+## 2. Fitur Utama (Core Features)
+
+* **Request Device Admin Permission:** Meminta izin hak akses administrator perangkat agar diizinkan mematikan layar secara programatis.
+* **Persistent Countdown Timer:** Menghitung mundur waktu dalam satuan menit menggunakan `CountDownTimer` bawaan Android.
+* **Foreground Service Protection:** Memastikan penghitung waktu tidak dimatikan paksa oleh sistem Android saat anak sedang bermain game berat atau menonton video.
+* **Instant Screen Lock:** Mematikan dan mengunci layar secara instan begitu waktu habis, lalu otomatis menutup *service* latar belakang.
+
+## 3. Struktur Folder Proyek (VS Code Blueprint)
+
+Buat struktur folder dan file di VS Code Anda persis seperti ini:
+
+```text
+📁 KidLockTimer/
+├── 📁 .github/
+│   └── 📁 workflows/
+│       └── 📄 android-build.yml
+├── 📁 app/
+│   ├── 📄 build.gradle.kts
+│   └── 📁 src/
+│       └── 📁 main/
+│           ├── 📄 AndroidManifest.xml
+│           ├── 📁 java/
+│           │   └── 📁 com/
+│           │       └── 📁 example/
+│           │           └── 📁 locktimer/
+│           │               ├── 📄 AdminReceiver.kt
+│           │               ├── 📄 MainActivity.kt
+│           │               └── 📄 TimerService.kt
+│           └── 📁 res/
+│               ├── 📁 layout/
+│               │   └── 📄 activity_main.xml
+│               └── 📁 xml/
+│                   └── 📄 device_admin_rules.xml
+├── 📄 build.gradle.kts
+├── 📄 settings.gradle.kts
+├── 📄 gradlew
+└── 📄 gradlew.bat
+
+```
+
+---
+
+## 4. Isi Kode Spesifik Spesifikasi Proyek
+
+Berikut adalah isi file esensial untuk konfigurasi Gradle dan Layout agar proyek Anda bisa di-build tanpa error di GitHub Actions. (Untuk file Kotlin `MainActivity`, `TimerService`, dan `AdminReceiver` kodenya sama persis dengan instruksi sebelumnya).
+
+### 📄 `settings.gradle.kts` (Root Folder)
+
+```kotlin
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "KidLockTimer"
+include(":app")
+
+```
+
+### 📄 `build.gradle.kts` (Root Folder)
+
+```kotlin
+plugins {
+    id("com.android.application") version "8.2.0" apply false
+    id("com.android.library") version "8.2.0" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.0" apply false
+}
+
+```
+
+### 📄 `app/build.gradle.kts` (Folder app)
+
+```kotlin
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
+
+android {
+    namespace = "com.example.locktimer"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.example.locktimer"
+        minSdk = 26 // Android 8.0 (Oreo) ke atas agar mendukung Notification Channel
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
+dependencies {
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+}
+
+```
+
+### 📄 `app/src/main/res/layout/activity_main.xml` (Tampilan UI Minimalis)
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_matrix"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Kid Lock Timer"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp"/>
+
+    <EditText
+        android:id="@+id/inputMenit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Masukkan durasi (menit)"
+        android:inputType="number"
+        android:text="3"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnStart"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Mulai Sesi Anak"/>
+</LinearLayout>
+
+```
+
+---
+
+## 5. Konfigurasi CI/CD Otomatis via GitHub Actions
+
+Agar GitHub bisa mem-build file `.apk` secara otomatis saat Anda melakukan `git push` dari VS Code, buat file ini di folder `.github/workflows/`:
+
+### 📄 `.github/workflows/android-build.yml`
+
+```yaml
+name: Android CI/CD (Build APK)
+
+on:
+  push:
+    branches: [ "main" ] # Memicu build tiap Anda push ke branch main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'zulu'
+        cache: gradle
+
+    - name: Grant Execute Permission for Gradlew
+      run: chmod +x gradlew
+
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
+
+    - name: Upload APK Result
+      uses: actions/upload-artifact@v4
+      with:
+        name: KidLockTimer-Debug-APK
+        path: app/build/outputs/apk/debug/app-debug.apk
+
+```
+
+---
+
+## 🚀 Alur Kerja Anda di VS Code
+
+1. **Inisialisasi Project:** Buka VS Code di folder kosong, buat file-file di atas sesuai jalurnya.
+2. **Inisialisasi Git:** Buka terminal di VS Code, ketik:
+```bash
+git init
+git add .
+git commit -m "Initial Lock Screen Timer Project"
+
+```
+
+
+3. **Hubungkan ke GitHub:** Buat repositori baru di akun GitHub Anda (pilih *Private* agar kode Anda aman), lalu ikuti instruksi GitHub untuk me-remote repositori tersebut.
+
+```bash
+   git remote add origin https://github.com/username-anda/nama-repo.git
+   git branch -M main
+   git push -u origin main
+
+```
+
+4. **Unduh APK-nya:** Begitu Anda push, buka tab **Actions** di halaman GitHub Anda. Tunggu sekitar 2-3 menit sampai proses kompilasi selesai. Anda bisa langsung mengunduh file `app-debug.apk` dari sana, lalu kirim ke HP anak untuk diinstal!
+
+```
+
+```
