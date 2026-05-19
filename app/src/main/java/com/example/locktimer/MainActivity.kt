@@ -7,14 +7,20 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 
@@ -27,6 +33,11 @@ class MainActivity : AppCompatActivity() {
     // Views
     private lateinit var cardAdminWarning: MaterialCardView
     private lateinit var btnEnableAdmin: MaterialButton
+    private lateinit var cardNotificationWarning: MaterialCardView
+    private lateinit var btnEnableNotification: MaterialButton
+    private lateinit var cardBatteryWarning: MaterialCardView
+    private lateinit var btnDisableBatteryOptimization: MaterialButton
+
     private lateinit var layoutSetupMode: LinearLayout
     private lateinit var inputMenit: EditText
     private lateinit var txtPinLabel: TextView
@@ -39,6 +50,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnStop: MaterialButton
 
     private val REQUEST_CODE_ENABLE_ADMIN = 1
+    private val REQUEST_CODE_NOTIFICATION_PERMISSION = 2
 
     // Receiver untuk menerima broadcast timer dari TimerService
     private val timerReceiver = object : BroadcastReceiver() {
@@ -68,6 +80,11 @@ class MainActivity : AppCompatActivity() {
         // Bind Views
         cardAdminWarning = findViewById(R.id.cardAdminWarning)
         btnEnableAdmin = findViewById(R.id.btnEnableAdmin)
+        cardNotificationWarning = findViewById(R.id.cardNotificationWarning)
+        btnEnableNotification = findViewById(R.id.btnEnableNotification)
+        cardBatteryWarning = findViewById(R.id.cardBatteryWarning)
+        btnDisableBatteryOptimization = findViewById(R.id.btnDisableBatteryOptimization)
+
         layoutSetupMode = findViewById(R.id.layoutSetupMode)
         inputMenit = findViewById(R.id.inputMenit)
         txtPinLabel = findViewById(R.id.txtPinLabel)
@@ -84,6 +101,14 @@ class MainActivity : AppCompatActivity() {
             requestDeviceAdmin()
         }
 
+        btnEnableNotification.setOnClickListener {
+            requestNotificationPermission()
+        }
+
+        btnDisableBatteryOptimization.setOnClickListener {
+            requestBatteryOptimizationExclusion()
+        }
+
         btnStart.setOnClickListener {
             handleStartSession()
         }
@@ -93,6 +118,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateAdminPermissionCard()
+        updateNotificationPermissionCard()
+        updateBatteryPermissionCard()
         checkPinState()
     }
 
@@ -116,6 +143,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateAdminPermissionCard()
+        updateNotificationPermissionCard()
+        updateBatteryPermissionCard()
         checkPinState()
 
         // Registrasi receiver broadcast timer
@@ -157,6 +186,86 @@ class MainActivity : AppCompatActivity() {
         startActivityForResult(intent, REQUEST_CODE_ENABLE_ADMIN)
     }
 
+    private fun checkNotificationPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+    }
+
+    private fun updateNotificationPermissionCard() {
+        if (checkNotificationPermission()) {
+            cardNotificationWarning.visibility = View.GONE
+        } else {
+            cardNotificationWarning.visibility = View.VISIBLE
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                REQUEST_CODE_NOTIFICATION_PERMISSION
+            )
+        }
+    }
+
+    private fun checkBatteryOptimizationIgnored(): Boolean {
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            pm.isIgnoringBatteryOptimizations(packageName)
+        } else {
+            true
+        }
+    }
+
+    private fun updateBatteryPermissionCard() {
+        if (checkBatteryOptimizationIgnored()) {
+            cardBatteryWarning.visibility = View.GONE
+        } else {
+            cardBatteryWarning.visibility = View.VISIBLE
+        }
+    }
+
+    private fun requestBatteryOptimizationExclusion() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:$packageName")
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                try {
+                    val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                    startActivity(intent)
+                } catch (ex: Exception) {
+                    Toast.makeText(this, "Pengaturan baterai tidak didukung di perangkat ini.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_NOTIFICATION_PERMISSION) {
+            updateNotificationPermissionCard()
+            if (checkNotificationPermission()) {
+                Toast.makeText(this, "Izin Notifikasi aktif!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Izin Notifikasi ditolak. Aplikasi mungkin mati di latar belakang.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_ENABLE_ADMIN) {
@@ -188,15 +297,15 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // 2. Validasi Durasi Menit
-        val menitText = inputMenit.text.toString().trim()
-        if (menitText.isEmpty()) {
-            inputMenit.error = "Masukkan durasi waktu bermain!"
+        // 2. Validasi Durasi Detik
+        val detikText = inputMenit.text.toString().trim()
+        if (detikText.isEmpty()) {
+            inputMenit.error = "Masukkan durasi waktu bermain (detik)!"
             return
         }
-        val menit = menitText.toIntOrNull()
-        if (menit == null || menit <= 0) {
-            inputMenit.error = "Durasi harus lebih dari 0 menit!"
+        val detik = detikText.toIntOrNull()
+        if (detik == null || detik <= 0) {
+            inputMenit.error = "Durasi harus lebih dari 0 detik!"
             return
         }
 
@@ -222,7 +331,7 @@ class MainActivity : AppCompatActivity() {
 
         // 4. Jalankan TimerService Foreground
         val serviceIntent = Intent(this, TimerService::class.java).apply {
-            putExtra("duration_min", menit)
+            putExtra("duration_sec", detik)
         }
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -236,7 +345,7 @@ class MainActivity : AppCompatActivity() {
         
         // Pindah ke tampilan Active
         showActiveMode()
-        Toast.makeText(this, "Sesi Bermain Anak dimulai selama $menit menit!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Sesi Bermain Anak dimulai selama $detik detik!", Toast.LENGTH_SHORT).show()
     }
 
     private fun handleStopSession() {
@@ -280,9 +389,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateTimerUI(remainingMs: Long) {
-        val minutes = (remainingMs / 1000) / 60
-        val seconds = (remainingMs / 1000) % 60
-        val timeString = String.format("%02d:%02d", minutes, seconds)
-        txtTimerDisplay.text = timeString
+        val seconds = (remainingMs + 999) / 1000
+        txtTimerDisplay.text = "$seconds detik"
     }
 }

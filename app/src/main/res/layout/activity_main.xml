@@ -97,6 +97,98 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- WARNING CARD: NOTIFICATION PERMISSION (For Android 13+) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardNotificationWarning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="16dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/warning"
+            app:cardBackgroundColor="#1AF59E0B"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Izin Notifikasi Diperlukan!"
+                    android:textColor="@color/warning"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="6dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/notification_permission_warning"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:layout_marginBottom="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEnableNotification"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Aktifkan Izin Notifikasi"
+                    android:textColor="@color/white"
+                    app:backgroundTint="@color/warning"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- WARNING CARD: BATTERY OPTIMIZATION EXCLUSION -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardBatteryWarning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="16dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/secondary"
+            app:cardBackgroundColor="#1A06B6D4"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Optimasi Baterai Aktif!"
+                    android:textColor="@color/secondary"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="6dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/battery_permission_warning"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:layout_marginBottom="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDisableBatteryOptimization"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Matikan Optimasi Baterai"
+                    android:textColor="@color/white"
+                    app:backgroundTint="@color/secondary"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- CONTAINER: TIMER INACTIVE (Setup Mode) -->
         <LinearLayout
             android:id="@+id/layoutSetupMode"
@@ -132,7 +224,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Durasi Main Anak (Menit)"
+                        android:text="Durasi Main Anak (Detik)"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:textStyle="bold"
@@ -143,13 +235,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="52dp"
                         android:background="@drawable/bg_input_field"
-                        android:hint="Masukkan menit (contoh: 30)"
+                        android:hint="Masukkan detik (contoh: 60)"
                         android:textColorHint="@color/text_secondary"
                         android:textColor="@color/text_primary"
                         android:inputType="number"
                         android:paddingHorizontal="16dp"
                         android:layout_marginBottom="16dp"
-                        android:text="15" />
+                        android:text="10" />
 
                     <!-- Parent PIN Config / Entry Section -->
                     <TextView
@@ -315,7 +407,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Kid Lock Timer v1.0 • Offline &amp; Secure"
+            android:text="Kid Lock Timer v1.1-Testing-Detik • Offline &amp; Secure"
             android:textColor="@color/text_secondary"
             android:textSize="11sp"
             android:layout_marginTop="32dp"

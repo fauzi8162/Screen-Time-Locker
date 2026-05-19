@@ -34,14 +34,14 @@ class TimerService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
 
-        // Ambil durasi. Bisa berupa duration_ms (dari BootReceiver) atau menit (dari MainActivity)
+        // Ambil durasi. Bisa berupa duration_ms (dari BootReceiver) atau detik (dari MainActivity)
         val durationMs = intent?.getLongExtra("duration_ms", -1L) ?: -1L
-        val durationMin = intent?.getIntExtra("duration_min", -1) ?: -1
+        val durationSec = intent?.getIntExtra("duration_sec", -1) ?: -1
         
         val totalMs = when {
             durationMs > 0 -> durationMs
-            durationMin > 0 -> durationMin * 60 * 1000L
-            else -> 15 * 60 * 1000L // Default 15 menit jika kosong
+            durationSec > 0 -> durationSec * 1000L
+            else -> 15 * 1000L // Default 15 detik jika kosong
         }
 
         val endTimeMillis = System.currentTimeMillis() + totalMs
@@ -109,9 +109,8 @@ class TimerService : Service() {
     }
 
     private fun buildNotification(remainingMs: Long): Notification {
-        val minutes = (remainingMs / 1000) / 60
-        val seconds = (remainingMs / 1000) % 60
-        val timeString = String.format("%02d:%02d", minutes, seconds)
+        val seconds = (remainingMs + 999) / 1000 // Round up seconds for better UX
+        val timeString = "$seconds detik"
 
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
